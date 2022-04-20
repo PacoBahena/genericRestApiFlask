@@ -1,7 +1,7 @@
 from flask import Blueprint
 
 from ..extensions import db
-from ..models.user import User
+from ..models.models import User
 
 api = Blueprint('api', __name__)
 
