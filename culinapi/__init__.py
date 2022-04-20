@@ -13,6 +13,6 @@ def create_app():
     migrate.init_app(app, db)
 
     app.register_blueprint(main)
-    app.register_blueprint(api)
+    app.register_blueprint(api,url_prefix="/api")
 
     return app

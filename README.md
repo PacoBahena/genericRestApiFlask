@@ -1,5 +1,34 @@
 # culiFlask
 
+### Setup 
+
+1. install python3.8 and create virtual env 
+
+		python3.8 venv -m venv
+
+2. install dependencies
+
+		pip install -r reqs.txt
+
+### Run
+
+1. setup db
+
+		flask init db
+		flask migrate
+		flask upgrade
+
+2. run with flask wsgi
+
+		export FLASK_APP=culinapi
+		export FLASK_ENV=development
+
+		flask run
+
+3. run with gunicorn 
+
+		gunicorn -w 4 -b 0.0.0.0:5000 "culinapi:create_app()"
+
 ### Setup MySQL docker container for db
 
 
