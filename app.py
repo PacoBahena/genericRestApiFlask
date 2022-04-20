@@ -1,4 +1,5 @@
 from hmac import compare_digest
+from datetime import datetime
 
 from flask import Flask
 from flask import jsonify
@@ -14,8 +15,8 @@ from flask_jwt_extended import JWTManager
 app = Flask(__name__)
 
 
-app.config["JWT_SECRET_KEY"] = "super-secret"  # Change this!
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
+app.config["JWT_SECRET_KEY"] = "super-secret"  # DEBUGGING, remember!
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///sample.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 
@@ -28,6 +29,10 @@ class User(db.Model):
     username = db.Column(db.Text, nullable=False, unique=True)
     full_name = db.Column(db.Text, nullable=False)
 
+    # NOTE: In a real application make sure to properly hash and salt passwords
+    def check_password(self, password):
+        return compare_digest(password, "password")
+
 class Dietician(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.Text, nullable=False, unique=True)
@@ -38,22 +43,37 @@ class Session(db.Model):
     username = db.Column(db.Text, nullable=False, unique=True)
     full_name = db.Column(db.Text, nullable=False)
 
-    # NOTE: In a real application make sure to properly hash and salt passwords
-    def check_password(self, password):
-        return compare_digest(password, "password")
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(80), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    pub_date = db.Column(db.DateTime, nullable=False,
+        default=datetime.utcnow)
+
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'),
+        nullable=False)
+    category = db.relationship('Category',
+        backref=db.backref('posts', lazy=True))
+
+    def __repr__(self):
+        return '<Post %r>' % self.title
 
 
-# Register a callback function that takes whatever object is passed in as the
-# identity when creating JWTs and converts it to a JSON serializable format.
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+
+    def __repr__(self):
+        return '<Category %r>' % self.name
+
+
+
 @jwt.user_identity_loader
 def user_identity_lookup(user):
     return user.id
 
 
-# Register a callback function that loads a user from your database whenever
-# a protected route is accessed. This should return any python object on a
-# successful lookup, or None if the lookup failed for any reason (for example
-# if the user has been deleted from the database).
+# Register a callback function for user_entity
 @jwt.user_lookup_loader
 def user_lookup_callback(_jwt_header, jwt_data):
     identity = jwt_data["sub"]
@@ -88,8 +108,8 @@ def protected():
 if __name__ == "__main__":
     db.create_all()
     db.session.add(User(full_name="Bruce Wayne", username="batman"))
-    db.session.add(User(full_name="Ann Takamaki", username="panther"))
-    db.session.add(User(full_name="Jester Lavore", username="little_sapphire"))
+    db.session.add(User(full_name="Pablo", username="panther"))
+    db.session.add(User(full_name="Martha", username="lion"))
     db.session.commit()
 
     app.run()
